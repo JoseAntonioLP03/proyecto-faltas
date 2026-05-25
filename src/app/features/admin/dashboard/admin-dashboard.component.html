@@ -1,0 +1,83 @@
+<section class="space-y-6">
+  <div class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-8 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+    <p class="text-sm font-medium tracking-wider text-cyan-300/80">Panel de administrador</p>
+    <h2 class="mt-3 text-3xl font-semibold text-white md:text-4xl">Gestión global y validación de justificantes</h2>
+    <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-300">Un cuadro de mando para supervisar usuarios, cursos y el estado de incidencias pendientes de revisión.</p>
+
+    <div class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <p class="text-sm font-medium tracking-wider text-slate-400">Estudiantes</p>
+        <p class="mt-3 text-3xl font-semibold text-white">{{ snapshot().totalEstudiantes }}</p>
+      </article>
+      <article class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <p class="text-sm font-medium tracking-wider text-slate-400">Profesores</p>
+        <p class="mt-3 text-3xl font-semibold text-white">{{ snapshot().totalProfesores }}</p>
+      </article>
+      <article class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <p class="text-sm font-medium tracking-wider text-slate-400">Cursos</p>
+        <p class="mt-3 text-3xl font-semibold text-white">{{ snapshot().totalCursos }}</p>
+      </article>
+      <article class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <p class="text-sm font-medium tracking-wider text-slate-400">Pendientes</p>
+        <p class="mt-3 text-3xl font-semibold text-rose-200">{{ snapshot().justificacionesPendientes }}</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+    <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Revisión</p>
+          <h3 class="mt-2 text-2xl font-semibold text-white">Incidencias no justificadas</h3>
+        </div>
+        <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">{{ pendingJustifications().length }} visibles</span>
+      </div>
+
+      <div class="mt-5 space-y-3">
+        <article *ngFor="let item of pendingJustifications()" class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-white">{{ item.tipo }}</p>
+              <p class="mt-1 text-xs text-slate-400">{{ item.course }} · {{ item.grupo }}</p>
+              <p class="mt-2 text-xs text-slate-500">{{ item.fecha | date:'dd/MM/yyyy · HH:mm' }}</p>
+            </div>
+              <span class="rounded-full border border-rose-400/20 bg-rose-400/10 px-3 py-1 text-xs font-medium text-rose-100">No justificada</span>
+          </div>
+          <p class="mt-3 text-sm text-slate-300">{{ item.comentario }}</p>
+        </article>
+      </div>
+    </article>
+
+    <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+      <div>
+        <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Operativa</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white">Acciones rápidas de gestión</h3>
+      </div>
+
+      <div class="mt-5 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium text-white">Alta de usuarios</p>
+          <p class="mt-2 text-sm text-slate-400">Crear alumnos, profesores y administradores.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium text-white">Cursos y asignaturas</p>
+          <p class="mt-2 text-sm text-slate-400">Configurar cursos, grupos y relación con usuarios.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium text-white">Justificantes</p>
+          <p class="mt-2 text-sm text-slate-400">Cambiar incidencias a justificadas tras validación documental.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium text-white">Supervisión</p>
+          <p class="mt-2 text-sm text-slate-400">Control visual sobre actividad reciente y estado global.</p>
+        </div>
+      </div>
+
+      <div class="mt-6 rounded-3xl border border-white/10 bg-gradient-to-r from-cyan-300/10 to-emerald-300/10 p-5">
+        <p class="text-sm font-medium text-white">Última sincronización</p>
+        <p class="mt-2 text-sm text-slate-300">{{ snapshot().ultimaSincronizacion }}</p>
+      </div>
+    </article>
+  </div>
+</section>

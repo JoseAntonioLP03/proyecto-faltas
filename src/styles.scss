@@ -1,1 +1,22 @@
-/* You can add global styles to this file, and also import other style files */
+html,
+body {
+	min-height: 100%;
+	margin: 0;
+	background:
+		radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 28%),
+		radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 26%),
+		#020617;
+	color: #f8fafc;
+	font-family: 'Manrope', sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+	font: inherit;
+}

@@ -1,0 +1,143 @@
+<section class="space-y-6">
+  <div class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-8 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+    <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+      <div class="max-w-3xl">
+        <p class="text-sm font-medium tracking-wider text-cyan-300/80">Panel de profesor</p>
+        <h2 class="mt-3 text-3xl font-semibold text-white md:text-4xl">Pase de lista y seguimiento del curso asociado</h2>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-300">Selecciona el grupo activo, marca ausencias de forma individual o masiva y guarda el pase de lista para registrar las incidencias con justificación por defecto en estado no justificado.</p>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[28rem] xl:grid-cols-4">
+        <article class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium tracking-wider text-slate-400">Alumnos</p>
+          <p class="mt-2 text-3xl font-semibold text-white">{{ activeStats().total }}</p>
+        </article>
+        <article class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium tracking-wider text-slate-400">Presentes</p>
+          <p class="mt-2 text-3xl font-semibold text-emerald-200">{{ activeStats().presentes }}</p>
+        </article>
+        <article class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium tracking-wider text-slate-400">Pendientes</p>
+          <p class="mt-2 text-3xl font-semibold text-rose-200">{{ activeStats().faltas + activeStats().retrasos + activeStats().salidas }}</p>
+        </article>
+        <article class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p class="text-sm font-medium tracking-wider text-slate-400">Historial</p>
+          <p class="mt-2 text-3xl font-semibold text-cyan-200">{{ activeCourse().historial.length }}</p>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+    <aside class="space-y-6">
+      <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+        <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Cursos asociados</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white">Selecciona el grupo activo</h3>
+
+        <div class="mt-5 space-y-3">
+          <button *ngFor="let course of courses(); trackBy: trackByCourse" type="button" (click)="selectCourse(course.id)" class="w-full rounded-2xl border px-4 py-4 text-left transition" [ngClass]="activeCourse().id === course.id ? 'border-cyan-300/50 bg-cyan-300/10' : 'border-white/10 bg-white/5'">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-white">{{ course.nombre }}</p>
+                <p class="mt-1 text-xs text-slate-400">{{ course.grupo }} · {{ course.aula }}</p>
+              </div>
+              <span class="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-xs text-slate-300">{{ course.alumnos.length }} alumnos</span>
+            </div>
+            <p class="mt-3 text-xs text-slate-400">{{ course.horario }}</p>
+          </button>
+        </div>
+      </article>
+
+      <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Acciones rápidas</p>
+            <h3 class="mt-2 text-2xl font-semibold text-white">Pase masivo</h3>
+          </div>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">{{ activeCourse().grupo }}</span>
+        </div>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <button type="button" class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/20" (click)="markAll('presente')">Marcar todos presentes</button>
+          <button type="button" class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/20" (click)="markAll('falta')">Marcar todos falta</button>
+          <button type="button" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-400/20" (click)="markAll('retraso')">Marcar todos retraso</button>
+          <button type="button" class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20" (click)="markAll('salida')">Marcar todos salida</button>
+        </div>
+
+        <button type="button" class="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-300 to-emerald-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:scale-[1.01]" (click)="saveAttendance()">Guardar pase de lista</button>
+
+        <p class="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300" *ngIf="statusMessage()">{{ statusMessage() }}</p>
+      </article>
+    </aside>
+
+    <section class="space-y-6">
+      <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">{{ activeCourse().grupo }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-white">{{ activeCourse().nombre }}</h3>
+            <p class="mt-2 text-sm text-slate-400">Aula {{ activeCourse().aula }} · {{ activeCourse().horario }} · {{ activeCourse().profesor }}</p>
+          </div>
+          <div class="grid grid-cols-4 gap-3 text-center text-sm">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2"><p class="text-slate-400">P</p><p class="text-lg font-semibold text-emerald-200">{{ activeStats().presentes }}</p></div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2"><p class="text-slate-400">F</p><p class="text-lg font-semibold text-rose-200">{{ activeStats().faltas }}</p></div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2"><p class="text-slate-400">R</p><p class="text-lg font-semibold text-amber-200">{{ activeStats().retrasos }}</p></div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2"><p class="text-slate-400">S</p><p class="text-lg font-semibold text-cyan-200">{{ activeStats().salidas }}</p></div>
+          </div>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-slate-950/60">
+          <table class="min-w-full divide-y divide-white/10 text-left text-sm">
+            <thead class="bg-white/5 text-slate-300">
+              <tr>
+                <th class="px-4 py-3 font-medium">Alumno</th>
+                <th class="px-4 py-3 font-medium">Estado</th>
+                <th class="px-4 py-3 font-medium">Comentario</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/10">
+              <tr *ngFor="let student of activeStudents(); trackBy: trackByStudent" class="align-top">
+                <td class="px-4 py-4">
+                  <p class="font-semibold text-white">{{ student.nombre }}</p>
+                  <p class="mt-1 text-xs text-slate-400">{{ student.email }}</p>
+                </td>
+                <td class="px-4 py-4">
+                  <select class="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/60" [ngModel]="student.estado" (ngModelChange)="markStudent(student.id, $event)" [name]="'state-' + student.id">
+                    <option *ngFor="let mark of attendanceMarks" [ngValue]="mark">{{ markLabels[mark] }}</option>
+                  </select>
+                </td>
+                <td class="px-4 py-4">
+                  <span class="inline-flex rounded-full border px-3 py-1 text-xs font-medium" [class]="markTone(student.estado)">{{ markLabels[student.estado] }}</span>
+                  <p class="mt-2 text-xs text-slate-400">{{ student.comentario || 'Sin comentario' }}</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <article class="rounded-[2rem] border border-white/10 bg-slate-900/75 p-6 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.35em] text-cyan-300/80">Historial del curso</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white">Incidencias recientes registradas</h3>
+      </div>
+      <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">{{ currentHistory().length }} registros</span>
+    </div>
+
+    <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <article *ngFor="let incident of currentHistory(); trackBy: trackByHistory" class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold text-white">{{ incident.tipo }}</p>
+            <p class="mt-1 text-xs text-slate-400">{{ incident.fecha | date:'dd/MM/yyyy · HH:mm' }}</p>
+          </div>
+          <span class="rounded-full border px-3 py-1 text-xs font-medium" [ngClass]="incident.justificada ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100' : 'border-rose-400/20 bg-rose-400/10 text-rose-100'">{{ incident.justificada ? 'Justificada' : 'No justificada' }}</span>
+        </div>
+        <p class="mt-3 text-sm text-slate-300">{{ incident.comentario }}</p>
+      </article>
+    </div>
+  </article>
+</section>
