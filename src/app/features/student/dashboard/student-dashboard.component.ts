@@ -37,7 +37,7 @@ export class StudentDashboardComponent {
     switch (type) {
       case 'Retraso':
         return 'text-amber-200';
-      case 'Salida anticipada':
+      case 'Salida de antes':
         return 'text-cyan-200';
       default:
         return 'text-rose-100';

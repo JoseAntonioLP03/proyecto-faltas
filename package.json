@@ -35,4 +35,11 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.7.2"
   }
+  ,
+  "overrides": {
+    "tmp": "0.2.6",
+    "tar": "7.5.11",
+    "serialize-javascript": "7.0.5",
+    "uuid": "11.1.1"
+  }
 }

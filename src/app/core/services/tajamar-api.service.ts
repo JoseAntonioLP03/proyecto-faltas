@@ -5,13 +5,51 @@ import { environment } from '../../../environments/environment';
 import { LoginResponse } from '../../shared/models/auth.model';
 import { CourseModel } from '../../shared/models/course.model';
 import { UserModel } from '../../shared/models/user.model';
+import { catchError, of, throwError } from 'rxjs';
+import { AttendanceIncidentModel } from '../../shared/models/attendance-incident.model';
+
+// Demo accounts to allow local testing when backend rejects credentials
+const DEMO_USERS: Record<string, { idrole: number; role: string }> = {
+  'marcos.pedroche@tajamar365.com': { idrole: 2, role: 'student' },
+  'profesortest@tajamar365.com': { idrole: 1, role: 'teacher' },
+  'admin@tajamar365.com': { idrole: 3, role: 'admin' }
+};
 
 @Injectable({ providedIn: 'root' })
 export class TajamarApiService {
   private readonly http = inject(HttpClient);
 
   login(credentials: { userName: string; password: string }) {
-    return this.http.post<LoginResponse>(`${environment.apiBaseUrl}${environment.authEndpoint}`, credentials);
+    return this.http.post<LoginResponse>(`${environment.apiBaseUrl}${environment.authEndpoint}`, credentials)
+      .pipe(
+        catchError((err) => {
+          // If backend rejects (401) and we're in development, allow demo accounts with a fabricated token
+          if (!environment.production && err && err.status === 401) {
+            const demo = DEMO_USERS[credentials.userName?.trim().toLowerCase() ?? ''];
+            if (demo) {
+              try {
+                const payload = { idrole: demo.idrole };
+                const token = `fake.${btoa(JSON.stringify(payload))}.sig`;
+                const response: LoginResponse = { response: token, role: demo.role, idrole: demo.idrole };
+                return of(response);
+              } catch {
+                // fallthrough to original error
+              }
+            }
+          }
+
+          return throwError(() => err);
+        })
+      );
+  }
+
+  postIncidents(incidents: AttendanceIncidentModel[]) {
+    const url = `${environment.apiBaseUrl}/api/Incidencias`;
+    return this.http.post(url, incidents).pipe(
+      catchError((err) => {
+        return throwError(() => err);
+      })
+    );
   }
 
   getUsers() {

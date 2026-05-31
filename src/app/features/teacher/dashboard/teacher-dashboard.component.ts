@@ -23,7 +23,8 @@ export class TeacherDashboardComponent {
   readonly courses = this.demoAttendance.teacherCourses;
   readonly activeCourse = this.demoAttendance.activeTeacherCourse;
   readonly activeStats = computed(() => this.demoAttendance.getActiveCourseStats());
-  readonly currentHistory = computed(() => this.activeCourse()?.historial.slice(0, 6) ?? []);
+  readonly currentHistory = computed(() => (this.activeCourse()?.historial ?? []).slice(0, 6));
+  
   readonly activeStudents = computed(() => this.activeCourse()?.alumnos ?? []);
   readonly statusMessage = signal('');
   readonly attendanceMarks: AttendanceMark[] = ['presente', 'falta', 'retraso', 'salida'];

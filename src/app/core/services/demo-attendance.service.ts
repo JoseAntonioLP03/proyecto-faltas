@@ -1,29 +1,29 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
 import { TajamarApiService } from './tajamar-api.service';
 import { AuthSessionService } from '../auth/auth-session.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, lastValueFrom } from 'rxjs';
+import { AttendanceIncidentModel, AttendanceType as IncidentType } from '../../shared/models/attendance-incident.model';
 import { environment } from '../../../environments/environment';
 
-export type AttendanceType = 'Falta de asistencia' | 'Retraso' | 'Salida anticipada';
 export type AttendanceMark = 'presente' | 'falta' | 'retraso' | 'salida';
 
 export const attendanceMarkLabels: Record<AttendanceMark, string> = {
   presente: 'Presente',
   falta: 'Falta',
   retraso: 'Retraso',
-  salida: 'Salida anticipada'
+  salida: 'Salida de antes'
 };
 
-export const attendanceTypeForMark: Record<Exclude<AttendanceMark, 'presente'>, AttendanceType> = {
-  falta: 'Falta de asistencia',
+export const attendanceTypeForMark: Record<Exclude<AttendanceMark, 'presente'>, IncidentType> = {
+  falta: 'Falta',
   retraso: 'Retraso',
-  salida: 'Salida anticipada'
+  salida: 'Salida de antes'
 };
 
 export interface StudentIncident {
   id: number;
   fecha: string;
-  tipo: AttendanceType;
+  tipo: IncidentType;
   justificada: boolean;
   comentario: string;
   idAlumno?: number;
@@ -125,28 +125,37 @@ export class DemoAttendanceService {
   }
 
   private loadRealData() {
-    this.api.login({ userName: 'admin@tajamar365.com', password: '12345' }).subscribe({
-      next: (adminSession) => {
-        const adminToken = adminSession.response;
-        const headers = { 'Authorization': `Bearer ${adminToken}` };
-        
-        forkJoin({
-          // Make direct HTTP calls overriding the interceptor with the admin token
-          users: this.api['http'].get<any[]>(`${environment.apiBaseUrl}${environment.usersEndpoint}`, { headers }),
-          courses: this.api['http'].get<any[]>(`${environment.apiBaseUrl}${environment.coursesEndpoint}`, { headers }),
-          cursosUsuarios: this.api['http'].get<any[]>(`${environment.apiBaseUrl}/api/CursosUsuarios`, { headers })
-        }).subscribe({
-          next: ({ users, courses, cursosUsuarios }) => {
-            const teacherCoursesList: TeacherCourse[] = [];
-            const newStudentProfiles = new Map<string, StudentDashboardData>();
+    const roleId = this.auth.getRoleId();
+
+    if (roleId === 3) {
+      this.loadAdminData();
+    } else if (roleId === 1) {
+      this.loadTeacherData();
+    } else if (roleId === 2) {
+      this.loadStudentData();
+    } else {
+      this.teacherCoursesSignal.set([]);
+      this.studentProfilesSignal.set(new Map());
+    }
+  }
+
+  private loadAdminData() {
+    forkJoin({
+      users: this.api.getUsers(),
+      courses: this.api.getCourses(),
+      cursosUsuarios: this.api.getCursosUsuarios()
+    }).subscribe({
+      next: ({ users, courses, cursosUsuarios }) => {
+        const teacherCoursesList: TeacherCourse[] = [];
+        const newStudentProfiles = new Map<string, StudentDashboardData>();
 
         for (const course of courses) {
-          const mapping = cursosUsuarios.filter(cu => cu.idCurso === course.idcurso);
-          const studentIds = mapping.map(m => m.idUsuario);
-          const courseUsers = users.filter(u => studentIds.includes(u.id));
+          const mapping = cursosUsuarios.filter((cu: any) => cu.idCurso === course.idcurso);
+          const studentIds = mapping.map((m: any) => m.idUsuario);
+          const courseUsers = users.filter((u: any) => studentIds.includes(u.id));
 
-          const teacher = courseUsers.find(u => u.idrole === 1);
-          const students = courseUsers.filter(u => u.idrole === 2);
+          const teacher = courseUsers.find((u: any) => u.idrole === 1);
+          const students = courseUsers.filter((u: any) => u.idrole === 2);
 
           const teacherCourse: TeacherCourse = {
             id: course.idcurso,
@@ -155,48 +164,111 @@ export class DemoAttendanceService {
             aula: `Aula ${course.idcurso}`,
             horario: 'Lunes a Viernes',
             profesor: teacher ? teacher.email : 'Sin asignar',
-            alumnos: students.map(s => ({
+            alumnos: students.map((s: any) => ({
               id: s.id,
               nombre: `${s.nombre} ${s.apellidos}`,
               email: s.email,
               estado: 'presente'
             })),
-            historial: [] 
+            historial: []
           };
           teacherCoursesList.push(teacherCourse);
 
           for (const s of students) {
-             const char1 = s.nombre ? s.nombre.charAt(0) : 'A';
-             const char2 = s.apellidos ? s.apellidos.charAt(0) : 'T';
-             const profile: StudentDashboardData = {
-               nombre: `${s.nombre} ${s.apellidos}`,
-               email: s.email,
-               grupo: 'Grupo Único',
-               curso: course.nombre,
-               tutor: teacher ? `${teacher.nombre} ${teacher.apellidos}` : 'Sin asignar',
-               avatar: (char1 + char2).toUpperCase(),
-               summary: { total: 0, faltas: 0, retrasos: 0, salidas: 0, justificadas: 0, noJustificadas: 0, asistencia: 100 },
-               tendencia: [],
-               incidencias: [],
-               insights: ['Asistencia perfecta.', 'Buen comienzo de curso.']
-             };
-             newStudentProfiles.set(s.email.trim().toLowerCase(), profile);
+            const char1 = s.nombre ? s.nombre.charAt(0) : 'A';
+            const char2 = s.apellidos ? s.apellidos.charAt(0) : 'T';
+            const profile: StudentDashboardData = {
+              nombre: `${s.nombre} ${s.apellidos}`,
+              email: s.email,
+              grupo: 'Grupo Único',
+              curso: course.nombre,
+              tutor: teacher ? `${teacher.nombre} ${teacher.apellidos}` : 'Sin asignar',
+              avatar: (char1 + char2).toUpperCase(),
+              summary: { total: 0, faltas: 0, retrasos: 0, salidas: 0, justificadas: 0, noJustificadas: 0, asistencia: 100 },
+              tendencia: [],
+              incidencias: [],
+              insights: ['Asistencia perfecta.', 'Buen comienzo de curso.']
+            };
+            newStudentProfiles.set(s.email.trim().toLowerCase(), profile);
           }
         }
-        
+
         this.teacherCoursesSignal.set(teacherCoursesList);
         this.studentProfilesSignal.set(newStudentProfiles);
-        
+
         // set active default
         this.activeCourseId.set(courses.length > 0 ? courses[0].idcurso : 1);
-        if (courses.some(c => c.idcurso === 3430)) {
-           this.activeCourseId.set(3430);
+        if (courses.some((c: any) => c.idcurso === 3430)) {
+          this.activeCourseId.set(3430);
         }
       },
-      error: (err) => console.error("Error loading API data", err)
+      error: (err) => console.error('Error loading API data', err)
     });
-    }, error: (err) => console.error("Error authenticating admin", err)
-  });
+  }
+
+  private loadTeacherData() {
+    this.api.getTeacherCourses().subscribe({
+      next: (courses) => {
+        if (!courses || !courses.length) {
+          this.teacherCoursesSignal.set([]);
+          return;
+        }
+
+        // For each course, try to fetch students (use lastValueFrom with safe fallback)
+        const studentCalls = courses.map(async (course: any) => {
+          try {
+            const students = (await lastValueFrom(this.api.getCourseStudents(course.idcurso ?? course.id))) || [];
+            return { course, students };
+          } catch {
+            return { course, students: [] };
+          }
+        });
+
+        Promise.all(studentCalls).then((results) => {
+          const teacherCoursesList: TeacherCourse[] = results.map(({ course, students }: any) => ({
+            id: course.idcurso ?? course.id,
+            nombre: course.nombre,
+            grupo: 'Grupo Único',
+            aula: `Aula ${course.idcurso ?? course.id}`,
+            horario: 'Lunes a Viernes',
+            profesor: course.profesor ?? 'Profesor',
+            alumnos: (students || []).map((s: any) => ({ id: s.id, nombre: `${s.nombre} ${s.apellidos}`, email: s.email, estado: 'presente' })),
+            historial: []
+          }));
+
+          this.teacherCoursesSignal.set(teacherCoursesList);
+          this.activeCourseId.set(teacherCoursesList.length ? teacherCoursesList[0].id : this.activeCourseId());
+        });
+      },
+      error: (err) => {
+        console.error('Error loading teacher courses', err);
+        if (!environment.production) {
+          // Fallback demo course for local development when backend rejects the token
+          const demoCourse: TeacherCourse = {
+            id: 1,
+            nombre: 'Curso Demo',
+            grupo: 'Grupo Demo',
+            aula: 'Aula 1',
+            horario: 'Lunes a Viernes',
+            profesor: 'Profesor Demo',
+            alumnos: [
+              { id: 101, nombre: 'Alumno Uno', email: 'alumno1@tajamar365.com', estado: 'presente' },
+              { id: 102, nombre: 'Alumno Dos', email: 'alumno2@tajamar365.com', estado: 'presente' }
+            ],
+            historial: []
+          };
+          this.teacherCoursesSignal.set([demoCourse]);
+          this.activeCourseId.set(demoCourse.id);
+        } else {
+          this.teacherCoursesSignal.set([]);
+        }
+      }
+    });
+  }
+
+  private loadStudentData() {
+    // Student-specific data is derived on demand from the studentProfilesSignal; keep default behavior
+    this.studentProfilesSignal.set(new Map());
   }
 
   getStudentDashboard(userName?: string | null): StudentDashboardData {
@@ -313,15 +385,38 @@ export class DemoAttendanceService {
            profile.incidencias.push(incident);
            profile.summary.total++;
            profile.summary.asistencia = Math.max(0, profile.summary.asistencia - 1);
-           if (incident.tipo === 'Falta de asistencia') profile.summary.faltas++;
+           if (incident.tipo === 'Falta') profile.summary.faltas++;
            else if (incident.tipo === 'Retraso') profile.summary.retrasos++;
-           else if (incident.tipo === 'Salida anticipada') profile.summary.salidas++;
+           else if (incident.tipo === 'Salida de antes') profile.summary.salidas++;
            profile.summary.noJustificadas++;
            currentProfiles.set(email, profile);
          }
       }
     });
     this.studentProfilesSignal.set(currentProfiles);
+
+    // If a token exists, attempt to persist incidents to backend
+    const token = this.auth.getToken();
+    if (token) {
+      try {
+        const payload = newIncidents.map((inc) => ({
+          id: inc.id,
+          idUsuario: inc.idAlumno ?? 0,
+          idCurso: currentCourse.id,
+          fechaIncidencia: inc.fecha,
+          tipoFalta: (inc.tipo === 'Falta' ? 'Falta' : inc.tipo === 'Retraso' ? 'Retraso' : 'Salida de antes') as AttendanceIncidentModel['tipoFalta'],
+          esJustificada: inc.justificada,
+          comentario: inc.comentario ?? null
+        }));
+
+        this.api.postIncidents(payload).subscribe({
+          next: () => console.log('Incidencias guardadas en backend'),
+          error: (err) => console.error('Error guardando incidencias en backend', err)
+        });
+      } catch (err) {
+        console.error('Error preparando incidencias para el backend', err);
+      }
+    }
 
     return newIncidents.length;
   }

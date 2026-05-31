@@ -103,7 +103,7 @@
                 </td>
                 <td class="px-4 py-4">
                   <select class="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/60" [ngModel]="student.estado" (ngModelChange)="markStudent(student.id, $event)" [name]="'state-' + student.id">
-                    <option *ngFor="let mark of attendanceMarks" [ngValue]="mark">{{ markLabels[mark] }}</option>
+                    <option *ngFor="let mark of attendanceMarks" [ngValue]="mark" class="option-text">{{ markLabels[mark] }}</option>
                   </select>
                 </td>
                 <td class="px-4 py-4">

@@ -1,3 +1,16 @@
 :host {
 	display: block;
 }.panel { }
+
+/* Ensure select options are readable on dark themes across browsers */
+:host ::ng-deep select.option-text,
+:host ::ng-deep select.option-text * {
+	color: #0f172a !important; /* slate-900 */
+	background-color: #ffffff !important;
+}
+
+/* Target native option elements specifically */
+:host ::ng-deep select option.option-text {
+	color: #0f172a !important;
+	background: #ffffff !important;
+}
